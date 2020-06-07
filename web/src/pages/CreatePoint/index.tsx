@@ -8,11 +8,11 @@ import api from '../../services/api';
 import Dropzone from '../../components/Dropzone';
 import logo from '../../assets/logo.svg';
 
-import './styles.css'; 
+import './styles.css';
 
 
 interface Item {
-    id: number; 
+    id: number;
     title: string;
     image_url: string;
 }
@@ -35,6 +35,7 @@ const CreatePoint = () => {
     const [selectedPosition, setSelectedPosition] = useState<[number, number]>([0, 0]);
     const [initialPosition, setInitialPosition] = useState<[number, number]>([0, 0]);
     const [selectedItems, setSelectedItems] = useState<number[]>([0]);
+    const [selectedFile, setSelectedFile] = useState<File>();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -93,42 +94,44 @@ const CreatePoint = () => {
     }
 
     function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
-        const {name, value} = event.target;
-        setFormData({ ...formData, [name]: value});
+        const { name, value } = event.target;
+        setFormData({ ...formData, [name]: value });
     }
 
     function handleSubmit(event: FormEvent) {
         event.preventDefault();
-        
-        const { name, email, whatsapp} = formData;
+
+        const { name, email, whatsapp } = formData;
         const uf = selectedUf;
         const city = selectedCity;
         const [latitude, longitude] = selectedPosition;
         const items = selectedItems;
 
-        const data = {
-            name,
-            email,
-            whatsapp,
-            uf,
-            city,
-            latitude,
-            longitude,
-            items
-        };
+        const data = new FormData();
+        data.append('name', name);
+        data.append('email', email);
+        data.append('whatsapp', whatsapp);
+        data.append('uf', uf);
+        data.append('city', city);
+        data.append('latitude', String(latitude));
+        data.append('longitude', String(longitude));
+        data.append('items', items.join(','));
+        if (selectedFile) {
+            data.append('image', selectedFile);
+        }
 
         api.post('points', data);
         alert('ponto de coleta criado');
         history.push('/');
     }
 
-    function handleSelectItem(id: number){
+    function handleSelectItem(id: number) {
         const alreadySelected = selectedItems.findIndex(item => item === id);
-        if(alreadySelected >= 0) {
+        if (alreadySelected >= 0) {
             const filteredItems = selectedItems.filter(item => item !== id);
             setSelectedItems(filteredItems);
         } else {
-            setSelectedItems([ ...selectedItems, id ]);
+            setSelectedItems([...selectedItems, id]);
         }
     }
 
@@ -146,7 +149,7 @@ const CreatePoint = () => {
 
             <form onSubmit={handleSubmit}>
                 <h1>Cadastro do <br /> ponto de coleta</h1>
-                <Dropzone/>
+                <Dropzone onFileUploaded={setSelectedFile} />
                 <fieldset>
                     <legend>
                         <h2>Dados</h2>
@@ -226,7 +229,7 @@ const CreatePoint = () => {
                     </legend>
                     <ul className="items-grid">
                         {items.map(item => (
-                            <li key={item.id} onClick={() => handleSelectItem(item.id)} 
+                            <li key={item.id} onClick={() => handleSelectItem(item.id)}
                                 className={selectedItems.includes(item.id) ? 'selected' : ''}>
                                 <img src={item.image_url} alt="Teste" />
                                 <span>{item.title}</span>
